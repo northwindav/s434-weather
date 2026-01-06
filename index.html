@@ -1,0 +1,316 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ignition Specialist – Fire Weather Resources</title>
+
+  <style>
+    :root {
+      --bg:#0f172a; --panel:#111827; --text:#e5e7eb; --muted:#9ca3af; --border:#374151; --link:#60a5fa;
+      --success:#22c55e; --error:#ef4444; --warn:#f59e0b; --tableDivider: rgba(55,65,81,0.6);
+    }
+    body {
+      margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background: linear-gradient(180deg, var(--bg), #0b1023 60%, #0a0f20); color: var(--text);
+    }
+    .container { max-width:1100px; margin:0 auto; padding:24px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    h1 { margin:0; font-size:1.6rem; }
+    .subtitle { color:var(--muted); font-size:0.95rem; }
+    .panel { background: rgba(17,24,39,0.75); border:1px solid var(--border); border-radius:12px; padding:16px; }
+    .grid { display:grid; gap:16px; }
+
+    /* Form */
+    form { display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:8px; }
+    label { font-size:0.85rem; color:var(--muted); }
+    input[type=text], textarea {
+      width:100%; padding:10px; border-radius:10px; border:1px solid var(--border);
+      background:#0b1223; color:var(--text);
+    }
+    textarea { min-height:40px; }
+    .actions { display:flex; gap:8px; align-items:stretch; }
+    button { padding:10px 14px; border:1px solid var(--border); border-radius:10px; color:var(--text); background:#0b1223; cursor:pointer; }
+    button.primary { border-color:#065f46; }
+    button.secondary { border-color:#1f3b6b; }
+    button.danger { border-color: var(--error); }
+    button:hover { filter: brightness(1.1); }
+
+    /* Table */
+    table { width:100%; border-collapse: collapse; }
+    thead th { text-align:left; color:var(--muted); border-bottom:1px solid var(--border); padding:8px; }
+    tbody td { padding:10px 8px; border-bottom:1px dashed var(--tableDivider); vertical-align: top; }
+    tbody tr:hover { background: rgba(8,12,24,0.55); }
+    .link a { color: var(--link); text-decoration: none; }
+    .link a:hover { text-decoration: underline; }
+    .row-actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .row-actions .move { font-size: 0.9rem; padding: 6px 8px; }
+
+    .toolbar { display:flex; gap:8px; flex-wrap:wrap; }
+    .tag { display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted); font-size:0.78rem; }
+
+    /* Drag & Drop styles */
+    tr[draggable="true"] { cursor: move; }
+    tr.dragging { opacity: 0.6; }
+    tr.dragover { outline: 2px dashed var(--link); }
+
+    @media (max-width: 800px) { form { grid-template-columns: 1fr; } }
+
+    /* Print stylesheet – compact and no Actions column */
+    @media print {
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body { background: #fff; color: #000; }
+      .container { max-width: none; padding: 0; }
+      header { display:block; margin-bottom: 8px; }
+      .subtitle { color: #000; font-size: 0.9rem; }
+      .panel { background: transparent; border: none; border-radius: 0; padding: 0; }
+
+      /* Hide interactive UI in print */
+      .toolbar, form, .actions, .row-actions { display: none !important; }
+
+      /* Compact table styling */
+      table { font-size: 12px; border-collapse: collapse; }
+      thead th { border-bottom: 1px solid #000; padding: 6px; }
+      tbody td { border-bottom: 1px solid #ccc; padding: 6px; }
+      a { color: #000; text-decoration: none; }
+      h1 { font-size: 1.2rem; margin-bottom: 4px; }
+
+      /* Hide 'Actions' column only in print/PDF */
+      thead th:last-child,
+      tbody td:last-child { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Fire Weather Resources</h1>
+        <div class="subtitle">Ignition Specialist Course – link list (Short name · Hyperlink · Notes)</div>
+      </div>
+      <div class="toolbar">
+        <button class="secondary" id="importJsonBtn">Import JSON</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+        <button class="secondary" id="exportJsonBtn">Export JSON</button>
+        <button class="secondary" id="exportCsvBtn">Export CSV</button>
+        <button class="secondary" id="printBtn">Print / Save PDF</button>
+        <span class="tag" id="recordCount">0 links</span>
+      </div>
+    </header>
+
+    <div class="grid" style="margin-top:16px;">
+      <div class="panel">
+        <form id="addForm" autocomplete="off">
+          <div>
+            <label for="shortName">Short name *</label>
+            <input type="text" id="shortName" placeholder="e.g., HRDPS Skew-T" required maxlength="120">
+          </div>
+          <div>
+            <label for="hyperlink">Hyperlink (URL) *</label>
+            <input type="text" id="hyperlink" placeholder="https://... or example.com" required>
+          </div>
+          <div>
+            <label for="notes">Notes</label>
+            <textarea id="notes" placeholder="Purpose, access steps, login needs, update schedule, etc."></textarea>
+          </div>
+          <div class="actions">
+            <button type="submit" class="primary">Add link</button>
+            <button type="button" id="clearFormBtn">Clear</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:20%">Short name</th>
+              <th style="width:40%">Hyperlink</th>
+              <th style="width:30%">Notes</th>
+              <th style="width:10%">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="linksBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <noscript>
+    <div style="padding:10px 14px;border:1px solid #ef4444;margin:12px;border-radius:10px;background:#fff;color:#000;">
+      JavaScript is required for adding links. Please enable JavaScript.
+    </div>
+  </noscript>
+
+  <!-- Inline app logic (no external JS) -->
+  <script>
+    (function(){
+      const STORAGE_KEY = 'fireWeatherLinks.v_inline';
+      const $ = (id) => document.getElementById(id);
+
+      // Toasts
+      const toastHost = (()=>{ const d=document.createElement('div'); d.style.cssText='position:fixed;top:16px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:9999'; document.body.appendChild(d); return d; })();
+      function toast(msg, type='info'){
+        const t = document.createElement('div');
+        t.style.cssText = 'padding:10px 14px;border-radius:10px;border:1px solid #374151;background:#0b1223;color:#e5e7eb;box-shadow:0 8px 16px rgba(0,0,0,0.35)';
+        if(type==='success') t.style.borderColor = '#22c55e';
+        if(type==='error') t.style.borderColor = '#ef4444';
+        t.textContent = msg; toastHost.appendChild(t);
+        setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity 300ms'; }, 2600);
+        setTimeout(()=>{ toastHost.removeChild(t); }, 3000);
+      }
+
+      function normalizeUrl(u){
+        let s = String(u||'').trim(); if(!s) return '';
+        if(!/^https?:\/\//i.test(s)) s = 'https://' + s.replace(/^\//, '');
+        try { const url = new URL(s); return ['http:','https:'].includes(url.protocol) ? url.toString() : ''; }
+        catch { return ''; }
+      }
+
+      function readLinks(){
+        try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+        catch(e){ return []; }
+      }
+      function writeLinks(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); updateRecordCount(list.length); }
+      function updateRecordCount(n){ const rc = $('recordCount'); if(rc) rc.textContent = `${n} link${n===1?'':'s'}`; }
+
+      function render(){
+        const tbody = $('linksBody'); if(!tbody) return;
+        tbody.innerHTML = '';
+        const list = readLinks();
+        list.forEach((item, idx) => {
+          const tr = document.createElement('tr');
+          tr.setAttribute('draggable','true');
+          tr.dataset.index = String(idx);
+          tr.addEventListener('dragstart', onDragStart);
+          tr.addEventListener('dragover', onDragOver);
+          tr.addEventListener('dragleave', onDragLeave);
+          tr.addEventListener('drop', onDrop);
+          tr.addEventListener('dragend', onDragEnd);
+
+          const tdName = document.createElement('td'); tdName.textContent = item.shortName;
+          const tdLink = document.createElement('td'); tdLink.className='link';
+          const a = document.createElement('a'); a.href=item.hyperlink; a.textContent=item.hyperlink; a.target='_blank'; a.rel='noopener noreferrer';
+          tdLink.appendChild(a);
+          const tdNotes = document.createElement('td'); tdNotes.textContent = item.notes || '';
+
+          const tdActions = document.createElement('td'); tdActions.className='row-actions';
+          const upBtn = document.createElement('button'); upBtn.textContent='↑'; upBtn.title='Move up'; upBtn.className='move';
+          const downBtn = document.createElement('button'); downBtn.textContent='↓'; downBtn.title='Move down'; downBtn.className='move';
+          const editBtn = document.createElement('button'); editBtn.textContent='Edit'; editBtn.className='secondary';
+          const delBtn = document.createElement('button'); delBtn.textContent='Delete'; delBtn.className='danger';
+
+          upBtn.addEventListener('click', () => moveRow(idx, -1));
+          downBtn.addEventListener('click', () => moveRow(idx, +1));
+          editBtn.addEventListener('click', () => editRow(idx));
+          delBtn.addEventListener('click', () => deleteRow(idx));
+
+          tdActions.appendChild(upBtn);
+          tdActions.appendChild(downBtn);
+          tdActions.appendChild(editBtn);
+          tdActions.appendChild(delBtn);
+
+          tr.appendChild(tdName); tr.appendChild(tdLink); tr.appendChild(tdNotes); tr.appendChild(tdActions);
+          tbody.appendChild(tr);
+        });
+        updateRecordCount(list.length);
+      }
+
+      function addLink(shortName, hyperlink, notes){
+        const list = readLinks(); list.push({ shortName, hyperlink, notes }); writeLinks(list); render(); toast('Link added successfully.','success');
+      }
+
+      function editRow(idx){
+        const list = readLinks(); const item = list[idx];
+        const shortName = prompt('Short name', item.shortName); if(shortName===null) return;
+        const hyperlinkRaw = prompt('Hyperlink (URL)', item.hyperlink); if(hyperlinkRaw===null) return;
+        const hyperlink = normalizeUrl(hyperlinkRaw); if(!hyperlink){ toast('Invalid URL. Please try again.','error'); return; }
+        const notes = prompt('Notes', item.notes||'') ?? '';
+        list[idx] = { shortName: shortName.trim(), hyperlink, notes: (notes||'').trim() };
+        writeLinks(list); render(); toast('Link updated.','success');
+      }
+
+      function deleteRow(idx){
+        const list = readLinks(); const item = list[idx];
+        if(!confirm(`Delete link: ${item.shortName}?`)) return;
+        list.splice(idx,1); writeLinks(list); render(); toast('Link deleted.','success');
+      }
+
+      function moveRow(idx, delta){
+        const list = readLinks(); const newIndex = Math.max(0, Math.min(list.length-1, idx + delta));
+        if(newIndex === idx) return;
+        const [moved] = list.splice(idx,1); list.splice(newIndex,0,moved);
+        writeLinks(list); render();
+      }
+
+      // Drag & Drop
+      let dragFrom = null;
+      function onDragStart(e){
+        dragFrom = Number(e.currentTarget.dataset.index);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(dragFrom));
+        e.currentTarget.classList.add('dragging');
+      }
+      function onDragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.classList.add('dragover'); }
+      function onDragLeave(e){ e.currentTarget.classList.remove('dragover'); }
+      function onDrop(e){
+        e.preventDefault();
+        const fromStr = e.dataTransfer.getData('text/plain');
+        const from = Number(fromStr);
+        const to = Number(e.currentTarget.dataset.index);
+        e.currentTarget.classList.remove('dragover');
+        if(Number.isInteger(from) && Number.isInteger(to) && from !== to){ reorder(from, to); }
+      }
+      function onDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
+      function reorder(from, to){
+        const list = readLinks();
+        const [moved] = list.splice(from,1); list.splice(to,0,moved);
+        writeLinks(list); render();
+      }
+
+      function bindUI(){
+        const form = $('addForm');
+        form.addEventListener('submit', (e)=>{
+          e.preventDefault();
+          const shortName = $('shortName').value.trim();
+          const hyperlink = normalizeUrl($('hyperlink').value);
+          const notes = $('notes').value.trim();
+          if(!shortName){ toast('Short name is required.','error'); return; }
+          if(!hyperlink){ toast('Please enter a valid URL.','error'); return; }
+          addLink(shortName, hyperlink, notes);
+          form.reset(); $('shortName').focus();
+        });
+        $('clearFormBtn').addEventListener('click', ()=> form.reset());
+
+        // Export/Import
+        function download(filename, text, mime){ const blob = new Blob([text], {type:mime}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); }
+        function toCsv(list){ const esc=(s)=>'"'+String(s).replace(/"/g,'""')+'"'; const header=['Short name','Hyperlink','Notes']; const rows=list.map(r=>[esc(r.shortName),esc(r.hyperlink),esc(r.notes||'')].join(',')); return header.join(',')+'\n'+rows.join('\n'); }
+        $('exportJsonBtn').addEventListener('click', ()=>{ const list = readLinks(); download('fire_weather_links.json', JSON.stringify(list,null,2), 'application/json'); toast('Exported JSON.','success'); });
+        $('exportCsvBtn').addEventListener('click', ()=>{ const list = readLinks(); download('fire_weather_links.csv', toCsv(list), 'text/csv'); toast('Exported CSV.','success'); });
+        $('printBtn').addEventListener('click', ()=> window.print());
+      }
+
+      function init(){
+        const existing = readLinks();
+        if(existing.length===0){
+          const samples = [
+            { shortName: 'Example: HRDPS Skew-T', hyperlink: normalizeUrl('example.com/hrdps-skewt'), notes: 'Replace with actual URL.' },
+            { shortName: 'Example: GEPS Sounding', hyperlink: normalizeUrl('example.com/geps-sounding'), notes: 'Replace with actual URL.' }
+          ];
+          writeLinks(samples);
+        }
+        render(); bindUI();
+        window.__appInitDone = true; // health flag
+      }
+
+      try {
+        document.addEventListener('DOMContentLoaded', init);
+      } catch(err) {
+        console.error('Boot error:', err);
+        alert('Boot error: ' + (err && err.message ? err.message : 'Unknown'));
+      }
+    })();
+  </script>
+</body>
+</html>
