@@ -28,4 +28,5 @@
   {"shortName":"Pivotal Weather","hyperlink":"https://home.pivotalweather.com/","notes":""},
   {"shortName":"SpotWX","hyperlink":"https://spotwx.com","notes":""},
   {"shortName":"FireSmoke","hyperlink":"https://firesmoke.ca/forecasts/current/","notes":""}
+  {"shortName":"FWI2025 Tool","hyperlink":"https://cfs-wips.github.io/fwi25-tools/","notes":""}
 ]
