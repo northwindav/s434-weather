@@ -295,8 +295,35 @@
         const existing = readLinks();
         if(existing.length===0){
           const samples = [
-            { shortName: 'Example: HRDPS Skew-T', hyperlink: normalizeUrl('example.com/hrdps-skewt'), notes: 'Replace with actual URL.' },
-            { shortName: 'Example: GEPS Sounding', hyperlink: normalizeUrl('example.com/geps-sounding'), notes: 'Replace with actual URL.' }
+            {"shortName":"MesoNet","hyperlink":"https://meso.cssl.ca/","notes":""},
+            {"shortName":"ECCC Weather","hyperlink":"https://weather.gc.ca/","notes":""},
+            {"shortName":"Satellite (ECCC)","hyperlink":"https://weather.gc.ca/satellite/index_e.html","notes":""},
+            {"shortName":"College of DuPage Satellite","hyperlink":"https://weather.cod.edu/satrad/?parms=global-northamerica-natcolorfire-24-0-100-1&checked=map&colorbar=data","notes":""},
+            {"shortName":"ECCC Upper Air Analysis","hyperlink":"https://weather.gc.ca/analysis/index_e.html","notes":""},
+            {"shortName":"Upper Air Soundings from UWyoming","hyperlink":"https://weather.uwyo.edu/upperair/sounding.shtml","notes":""},
+            {"shortName":"CWFIS Interactive Map","hyperlink":"https://cwfis.cfs.nrcan.gc.ca/interactive-map","notes":""},
+            {"shortName":"NASA FIRMS US/Canada Hot Spots","hyperlink":"https://firms.modaps.eosdis.nasa.gov/usfs/map/","notes":""},
+            {"shortName":"PurpleAir Surface PM2.5","hyperlink":"https://map.purpleair.com/air-quality-standards-us-epa-aq","notes":""},
+            {"shortName":"Blitzortung Lightning","hyperlink":"https://www.blitzortung.org/en/live_lightning_maps.php","notes":""},
+            {"shortName":"UQAM Fire Weather","hyperlink":"http://feux.escer.uqam.ca/en/index.html","notes":""},
+            {"shortName":"BC","hyperlink":"https://www2.gov.bc.ca/gov/content/safety/wildfire-status/prepare/weather-fire-danger/fire-weather","notes":""},
+            {"shortName":"AB","hyperlink":"https://www.alberta.ca/fire-weather-forecasts-and-observations","notes":""},
+            {"shortName":"AB ACIS","hyperlink":"https://acis.alberta.ca/","notes":""},
+            {"shortName":"SK","hyperlink":"https://wfm.gov.sk.ca/wfm","notes":""},
+            {"shortName":"MB","hyperlink":"https://www.gov.mb.ca/conservation_fire/Wx-Display/weatherview/weatherview.html","notes":""},
+            {"shortName":"ON","hyperlink":"https://www.lioapplications.lrc.gov.on.ca/ForestFireInformationMap/index.html?viewer=FFIM.FFIM","notes":""},
+            {"shortName":"QC SOPFEU","hyperlink":"https://www.sopfeu.qc.ca/en/current-situation/","notes":""},
+            {"shortName":"NB","hyperlink":"https://dnr-mrn.gnb.ca/NBFireWeather/CurrentWeather/ByStation.aspx","notes":""},
+            {"shortName":"NS","hyperlink":"https://novascotia.ca/natr/forestprotection/wildfire/fwi/fire-weather-forecast-actuals.asp","notes":""},
+            {"shortName":"NL","hyperlink":"https://www.gov.nl.ca/fal/public-education/forestry/forest-fires/","notes":""},
+            {"shortName":"PEI","hyperlink":"https://www.princeedwardisland.ca/en/service/check-fire-weather-index-online","notes":""},
+            {"shortName":"YT","hyperlink":"https://weather.service.yukon.ca/weather/","notes":""},
+            {"shortName":"NWT","hyperlink":"https://www.gov.nt.ca/ecc/en/services/wildfire-operations","notes":""},
+            {"shortName":"MSC Animet","hyperlink":"https://eccc-msc.github.io/msc-animet/","notes":""},
+            {"shortName":"Windy","hyperlink":"https://www.windy.com/","notes":""},
+            {"shortName":"Pivotal Weather","hyperlink":"https://home.pivotalweather.com/","notes":""},
+            {"shortName":"SpotWX","hyperlink":"https://spotwx.com","notes":""},
+            {"shortName":"FireSmoke","hyperlink":"https://firesmoke.ca/forecasts/current/","notes":""}
           ];
           writeLinks(samples);
         }
