@@ -92,6 +92,8 @@
       <div class="toolbar">
         <button class="secondary" id="importJsonBtn">Import JSON</button>
         <input type="file" id="importFile" accept="application/json" style="display:none">
+        <button class="secondary" id="importCsvBtn">Import CSV</button>
+        <input type="file" id="importCsvFile" accept=".csv" style="display:none">
         <button class="secondary" id="exportJsonBtn">Export JSON</button>
         <button class="secondary" id="exportCsvBtn">Export CSV</button>
         <button class="secondary" id="printBtn">Print / Save PDF</button>
@@ -286,6 +288,69 @@
         // Export/Import
         function download(filename, text, mime){ const blob = new Blob([text], {type:mime}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); }
         function toCsv(list){ const esc=(s)=>'"'+String(s).replace(/"/g,'""')+'"'; const header=['Short name','Hyperlink','Notes']; const rows=list.map(r=>[esc(r.shortName),esc(r.hyperlink),esc(r.notes||'')].join(',')); return header.join(',')+'\n'+rows.join('\n'); }
+        function parseCsv(text){
+          const lines = text.split('\n').map(l=>l.trim()).filter(l=>l);
+          if(lines.length<1) return [];
+          const header = lines[0].split(',').map(h=>h.trim().toLowerCase());
+          const shortNameIdx = header.indexOf('short name');
+          const hyperlinkIdx = header.indexOf('hyperlink');
+          const notesIdx = header.indexOf('notes');
+          if(shortNameIdx===-1 || hyperlinkIdx===-1){ toast('CSV must have "Short name" and "Hyperlink" columns.','error'); return []; }
+          const rows = [];
+          for(let i=1;i<lines.length;i++){
+            let current = '';
+            let inQuotes = false;
+            const cells = [];
+            for(let j=0;j<lines[i].length;j++){
+              const char = lines[i][j];
+              if(char==='"'){ inQuotes = !inQuotes; }
+              else if(char===',' && !inQuotes){ cells.push(current.trim()); current=''; }
+              else{ current += char; }
+            }
+            cells.push(current.trim());
+            if(cells.length > shortNameIdx && cells.length > hyperlinkIdx){
+              const name = cells[shortNameIdx].replace(/^"|"$/g,'');
+              const url = normalizeUrl(cells[hyperlinkIdx].replace(/^"|"$/g,''));
+              const notes = notesIdx!==-1 && cells.length>notesIdx ? cells[notesIdx].replace(/^"|"$/g,'') : '';
+              if(name && url){ rows.push({ shortName: name, hyperlink: url, notes: notes || '' }); }
+            }
+          }
+          return rows;
+        }
+        $('importJsonBtn').addEventListener('click', ()=> $('importFile').click());
+        $('importFile').addEventListener('change', (e)=>{
+          const file = e.target.files[0];
+          if(!file) return;
+          const reader = new FileReader();
+          reader.onload = (evt)=>{
+            try{
+              const data = JSON.parse(evt.target.result);
+              if(Array.isArray(data)){
+                const list = readLinks();
+                data.forEach(item=>{ if(item.shortName && item.hyperlink){ list.push({ shortName: item.shortName, hyperlink: normalizeUrl(item.hyperlink), notes: item.notes||'' }); } });
+                writeLinks(list); render(); toast(`Imported ${data.length} link${data.length===1?'':'s'}.`,'success');
+              }
+            }catch(err){ toast('Invalid JSON file.','error'); }
+            e.target.value='';
+          };
+          reader.readAsText(file);
+        });
+        $('importCsvBtn').addEventListener('click', ()=> $('importCsvFile').click());
+        $('importCsvFile').addEventListener('change', (e)=>{
+          const file = e.target.files[0];
+          if(!file) return;
+          const reader = new FileReader();
+          reader.onload = (evt)=>{
+            const rows = parseCsv(evt.target.result);
+            if(rows.length>0){
+              const list = readLinks();
+              list.push(...rows);
+              writeLinks(list); render(); toast(`Imported ${rows.length} link${rows.length===1?'':'s'}.`,'success');
+            }
+            e.target.value='';
+          };
+          reader.readAsText(file);
+        });
         $('exportJsonBtn').addEventListener('click', ()=>{ const list = readLinks(); download('fire_weather_links.json', JSON.stringify(list,null,2), 'application/json'); toast('Exported JSON.','success'); });
         $('exportCsvBtn').addEventListener('click', ()=>{ const list = readLinks(); download('fire_weather_links.csv', toCsv(list), 'text/csv'); toast('Exported CSV.','success'); });
         $('printBtn').addEventListener('click', ()=> window.print());
@@ -294,40 +359,23 @@
       function init(){
         const existing = readLinks();
         if(existing.length===0){
-          const samples = [
-            {"shortName":"MesoNet","hyperlink":"https://meso.cssl.ca/","notes":""},
-            {"shortName":"ECCC Weather","hyperlink":"https://weather.gc.ca/","notes":""},
-            {"shortName":"Satellite (ECCC)","hyperlink":"https://weather.gc.ca/satellite/index_e.html","notes":""},
-            {"shortName":"College of DuPage Satellite","hyperlink":"https://weather.cod.edu/satrad/?parms=global-northamerica-natcolorfire-24-0-100-1&checked=map&colorbar=data","notes":""},
-            {"shortName":"ECCC Upper Air Analysis","hyperlink":"https://weather.gc.ca/analysis/index_e.html","notes":""},
-            {"shortName":"Upper Air Soundings from UWyoming","hyperlink":"https://weather.uwyo.edu/upperair/sounding.shtml","notes":""},
-            {"shortName":"CWFIS Interactive Map","hyperlink":"https://cwfis.cfs.nrcan.gc.ca/interactive-map","notes":""},
-            {"shortName":"NASA FIRMS US/Canada Hot Spots","hyperlink":"https://firms.modaps.eosdis.nasa.gov/usfs/map/","notes":""},
-            {"shortName":"PurpleAir Surface PM2.5","hyperlink":"https://map.purpleair.com/air-quality-standards-us-epa-aq","notes":""},
-            {"shortName":"Blitzortung Lightning","hyperlink":"https://www.blitzortung.org/en/live_lightning_maps.php","notes":""},
-            {"shortName":"UQAM Fire Weather","hyperlink":"http://feux.escer.uqam.ca/en/index.html","notes":""},
-            {"shortName":"BC","hyperlink":"https://www2.gov.bc.ca/gov/content/safety/wildfire-status/prepare/weather-fire-danger/fire-weather","notes":""},
-            {"shortName":"AB","hyperlink":"https://www.alberta.ca/fire-weather-forecasts-and-observations","notes":""},
-            {"shortName":"AB ACIS","hyperlink":"https://acis.alberta.ca/","notes":""},
-            {"shortName":"SK","hyperlink":"https://wfm.gov.sk.ca/wfm","notes":""},
-            {"shortName":"MB","hyperlink":"https://www.gov.mb.ca/conservation_fire/Wx-Display/weatherview/weatherview.html","notes":""},
-            {"shortName":"ON","hyperlink":"https://www.lioapplications.lrc.gov.on.ca/ForestFireInformationMap/index.html?viewer=FFIM.FFIM","notes":""},
-            {"shortName":"QC SOPFEU","hyperlink":"https://www.sopfeu.qc.ca/en/current-situation/","notes":""},
-            {"shortName":"NB","hyperlink":"https://dnr-mrn.gnb.ca/NBFireWeather/CurrentWeather/ByStation.aspx","notes":""},
-            {"shortName":"NS","hyperlink":"https://novascotia.ca/natr/forestprotection/wildfire/fwi/fire-weather-forecast-actuals.asp","notes":""},
-            {"shortName":"NL","hyperlink":"https://www.gov.nl.ca/fal/public-education/forestry/forest-fires/","notes":""},
-            {"shortName":"PEI","hyperlink":"https://www.princeedwardisland.ca/en/service/check-fire-weather-index-online","notes":""},
-            {"shortName":"YT","hyperlink":"https://weather.service.yukon.ca/weather/","notes":""},
-            {"shortName":"NWT","hyperlink":"https://www.gov.nt.ca/ecc/en/services/wildfire-operations","notes":""},
-            {"shortName":"MSC Animet","hyperlink":"https://eccc-msc.github.io/msc-animet/","notes":""},
-            {"shortName":"Windy","hyperlink":"https://www.windy.com/","notes":""},
-            {"shortName":"Pivotal Weather","hyperlink":"https://home.pivotalweather.com/","notes":""},
-            {"shortName":"SpotWX","hyperlink":"https://spotwx.com","notes":""},
-            {"shortName":"FireSmoke","hyperlink":"https://firesmoke.ca/forecasts/current/","notes":""}
-          ];
-          writeLinks(samples);
+          // Fetch shared data.json from repo
+          fetch('./data.json')
+            .then(response => response.json())
+            .then(data => {
+              writeLinks(data); render();
+              toast('Loaded shared links from repository.','success');
+            })
+            .catch(err => {
+              console.warn('Could not load data.json:', err);
+              // Fallback: empty state, user can import or add manually
+              toast('Could not load shared links. You can import or add links manually.','info');
+              render();
+            });
+        } else {
+          render();
         }
-        render(); bindUI();
+        bindUI();
         window.__appInitDone = true; // health flag
       }
 
