@@ -4,6 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Ignition Specialist – Fire Weather Resources</title>
 
   <style>
@@ -359,8 +362,8 @@
       function init(){
         const existing = readLinks();
         if(existing.length===0){
-          // Fetch shared data.json from repo
-          fetch('./data.json')
+          // Fetch shared data.json from repo with cache-busting
+          fetch('./data.json?cb=' + Date.now(), { cache: 'no-store' })
             .then(response => response.json())
             .then(data => {
               writeLinks(data); render();
